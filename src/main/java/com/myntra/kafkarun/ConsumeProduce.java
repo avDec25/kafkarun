@@ -32,9 +32,7 @@ public class ConsumeProduce {
 			consumerProperties.put("group.id", request.consumerGroupId);
 			consumerProperties.put("bootstrap.servers", request.consumerBootstrap);
 			consumerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
-			consumerProperties.put("key.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
 			consumerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
-			consumerProperties.put("value.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
 			consumerProperties.put("group.instance.id", "1");
 			consumerProperties.put("client.id", "kafka-run-cp-consumer");
 
@@ -44,9 +42,7 @@ public class ConsumeProduce {
 
 			producerProperties.put("bootstrap.servers", request.producerBootstrap);
 			producerProperties.put("key.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
-			producerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 			producerProperties.put("value.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
-			producerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 			producerProperties.put("client.id", "kafka-run-cp-producer");
 			produceTo = new KafkaProducer<String, Object>(producerProperties);
 
