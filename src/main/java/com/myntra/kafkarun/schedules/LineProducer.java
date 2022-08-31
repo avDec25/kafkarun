@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class LineProducer {
 
 	@SneakyThrows
-	@Scheduled(initialDelay = 10000, fixedDelay=Long.MAX_VALUE)
+//	@Scheduled(initialDelay = 10000, fixedDelay=Long.MAX_VALUE)
 	public void produceFileToTopic() {
 		System.out.println("Starting Slow Message Production " + new Date());
 
@@ -34,7 +34,8 @@ public class LineProducer {
 		System.out.println("################# Producing message #################");
 		System.out.println(line);
 		System.out.println("#####################################################");
-		kafkaTemplate.send("dc1.Pretr-PUSH_UPDATE_EVENT_TO_SELLER", line);
+		int partition = 5;
+		kafkaTemplate.send("dc1.Pretr-PUSH_UPDATE_EVENT_TO_SELLER", partition, null, line);
 	}
 
 }
