@@ -15,13 +15,15 @@ import java.util.stream.Stream;
 public class LineProducer {
 
 	@SneakyThrows
-//	@Scheduled(initialDelay = 10000, fixedDelay=Long.MAX_VALUE)
+	@Scheduled(initialDelay = 10000, fixedDelay=Long.MAX_VALUE)
 	public void produceFileToTopic() {
-		System.out.println("Starting Slow Message Production " + new Date());
+		System.out.println("Transfer messages in File to Topic; Started at " + new Date());
 
-		String fileName = "/tmp/messagesData.txt";
+		String fileName = "/tmp/messages.txt";
 		try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
 			stream.forEach(this::processLine);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -30,12 +32,10 @@ public class LineProducer {
 
 	@SneakyThrows
 	public void processLine(String line) {
-		Thread.sleep(1000);
-		System.out.println("################# Producing message #################");
+		kafkaTemplate.send("dc1.Pretr-PUSH_UPDATE_EVENT_TO_SELLER", null, line);
+		System.out.println("################# Produced message #################");
 		System.out.println(line);
 		System.out.println("#####################################################");
-		int partition = 5;
-		kafkaTemplate.send("dc1.Pretr-PUSH_UPDATE_EVENT_TO_SELLER", partition, null, line);
 	}
 
 }
