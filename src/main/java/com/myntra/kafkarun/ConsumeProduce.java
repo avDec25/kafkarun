@@ -9,6 +9,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -28,7 +29,7 @@ public class ConsumeProduce {
 	boolean simpleRun = true;
 
 	@SneakyThrows
-	@RequestMapping("simple/start")
+	@PostMapping("simple/start")
 	public ResponseEntity<?> simpleConsumeProduce(@RequestBody SimpleConsumeProduceRequest request) {
 		consumerProperties.put("bootstrap.servers", request.consumerBootstrap);
 		consumerProperties.put("group.id", request.consumerGroupId);
@@ -77,7 +78,7 @@ public class ConsumeProduce {
 
 
 	@SneakyThrows
-	@RequestMapping("start")
+	@PostMapping("start")
 	public ResponseEntity<?> consumerFromProduceTo(@RequestBody ConsumeProduceOffsetRequest request) {
 		try {
 			consumerProperties.put("group.id", request.consumerGroupId);
@@ -162,7 +163,7 @@ public class ConsumeProduce {
 		return ResponseEntity.ok().body("Done.");
 	}
 
-	@RequestMapping("stop")
+	@PostMapping("stop")
 	public ResponseEntity<?> stopConsumeProduce() {
 		try {
 			run = false;
