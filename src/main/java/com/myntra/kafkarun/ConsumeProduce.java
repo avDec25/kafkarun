@@ -1,5 +1,7 @@
 package com.myntra.kafkarun;
 
+import com.myntra.kafkarun.requestFromClients.ConsumeProduceOffsetRequest;
+import com.myntra.kafkarun.requestFromClients.SimpleConsumeProduceRequest;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -23,6 +25,55 @@ public class ConsumeProduce {
 	Collection<String> allTopics = new HashSet<>();
 	KafkaProducer<String, Object> produceTo = null;
 	boolean run = true;
+	boolean simpleRun = true;
+
+	@SneakyThrows
+	@RequestMapping("simple/start")
+	public ResponseEntity<?> simpleConsumeProduce(@RequestBody SimpleConsumeProduceRequest request) {
+		consumerProperties.put("bootstrap.servers", request.consumerBootstrap);
+		consumerProperties.put("group.id", request.consumerGroupId);
+		consumerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
+		consumerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
+		consumerProperties.put("group.instance.id", "1");
+		consumerProperties.put("client.id", "kafka-run-cp-consumer-" + System.currentTimeMillis());
+
+		String hostname = InetAddress.getLocalHost().getHostName();
+		consumerProperties.put("client.rack", hostname);
+
+		producerProperties.put("bootstrap.servers", request.producerBootstrap);
+		producerProperties.put("key.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
+		producerProperties.put("value.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
+		producerProperties.put("client.id", "kafka-run-cp-producer-" + System.currentTimeMillis());
+		produceTo = new KafkaProducer<String, Object>(producerProperties);
+
+		consumer = new KafkaConsumer<>(consumerProperties);
+		consumer.subscribe(Collections.singletonList(request.consumeFromTopic));
+
+		simpleRun = true;
+		while (simpleRun) {
+			ConsumerRecords<String, Object> crs = consumer.poll(Duration.ofMillis(100L));
+			for (ConsumerRecord<String, Object> record : crs) {
+				System.out.println("**************************** Consumed Record ****************************");
+				System.out.printf("Consumed from Topic: %s%n", record.topic());
+				System.out.printf("Consumed from Partition: %s%n", record.partition());
+				System.out.printf("Consumed Offset: %s%n", record.offset());
+				System.out.printf("Consumed Value: %s%n", record.value());
+				System.out.println("*************************************************************************");
+				ProducerRecord<String, Object> producerRecord = new ProducerRecord<>(
+						request.produceToTopic,
+						record.key(),
+						record.value()
+				);
+				produceTo.send(producerRecord);
+				System.out.printf("Produced To Topic: %s%n", request.produceToTopic);
+				System.out.println("**************************** Produced Record ****************************");
+				if (!simpleRun) {
+					break;
+				}
+			}
+		}
+		return ResponseEntity.ok().body("Done Simple Consume and Produce");
+	}
 
 
 	@SneakyThrows
@@ -34,7 +85,7 @@ public class ConsumeProduce {
 			consumerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 			consumerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 			consumerProperties.put("group.instance.id", "1");
-			consumerProperties.put("client.id", "kafka-run-cp-consumer");
+			consumerProperties.put("client.id", "kafka-run-cp-consumer-" + System.currentTimeMillis());
 
 			String hostname = InetAddress.getLocalHost().getHostName();
 			consumerProperties.put("client.rack", hostname);
@@ -43,7 +94,7 @@ public class ConsumeProduce {
 			producerProperties.put("bootstrap.servers", request.producerBootstrap);
 			producerProperties.put("key.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
 			producerProperties.put("value.serializer", org.apache.kafka.common.serialization.StringSerializer.class);
-			producerProperties.put("client.id", "kafka-run-cp-producer");
+			producerProperties.put("client.id", "kafka-run-cp-producer-" + System.currentTimeMillis());
 			produceTo = new KafkaProducer<String, Object>(producerProperties);
 
 
@@ -115,6 +166,7 @@ public class ConsumeProduce {
 	public ResponseEntity<?> stopConsumeProduce() {
 		try {
 			run = false;
+			simpleRun = false;
 			consumer.close();
 			produceTo.close();
 			return ResponseEntity.ok("Consumer and Producer are Closed now");

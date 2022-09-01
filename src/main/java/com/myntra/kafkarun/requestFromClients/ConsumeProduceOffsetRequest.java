@@ -1,4 +1,4 @@
-package com.myntra.kafkarun;
+package com.myntra.kafkarun.requestFromClients;
 
 import java.util.Map;
 
