@@ -35,7 +35,7 @@ public class ConsumeProduce {
 		consumerProperties.put("group.id", request.consumerGroupId);
 		consumerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 		consumerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
-		consumerProperties.put("group.instance.id", "1");
+//		consumerProperties.put("group.instance.id", "1");
 		consumerProperties.put("client.id", "kafka-run-cp-consumer-" + System.currentTimeMillis());
 
 		String hostname = InetAddress.getLocalHost().getHostName();
