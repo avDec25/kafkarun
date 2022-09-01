@@ -1,6 +1,7 @@
 package com.myntra.kafkarun.schedules;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -12,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.stream.Stream;
 
+@Slf4j
 @Component
 public class LineProducer {
 
@@ -32,7 +34,7 @@ public class LineProducer {
 		try (Stream<String> stream = Files.lines(Paths.get(SOURCE_FILE_PATH))) {
 			stream.forEach(this::processLine);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error: Cannot stream lines from file; Reason: ", e.getCause());
 		}
 	}
 
