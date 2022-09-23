@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.net.InetAddress;
 import java.time.Duration;
@@ -30,9 +31,9 @@ public class ConsumeProduce {
 
 	@SneakyThrows
 	@PostMapping("simple/start")
-	public ResponseEntity<?> simpleConsumeProduce(@RequestBody SimpleConsumeProduceRequest request) {
-		consumerProperties.put("bootstrap.servers", request.consumerBootstrap);
+	public ResponseEntity<?> simpleConsumeProduce(@RequestBody SimpleConsumeProduceRequest request, @RequestParam int partition) {
 		consumerProperties.put("group.id", request.consumerGroupId);
+		consumerProperties.put("bootstrap.servers", request.consumerBootstrap);
 		consumerProperties.put("key.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 		consumerProperties.put("value.deserializer", org.apache.kafka.common.serialization.StringDeserializer.class);
 //		consumerProperties.put("group.instance.id", "1");
@@ -62,9 +63,11 @@ public class ConsumeProduce {
 				System.out.println("*************************************************************************");
 				ProducerRecord<String, Object> producerRecord = new ProducerRecord<>(
 						request.produceToTopic,
+						partition,
 						record.key(),
 						record.value()
 				);
+
 				produceTo.send(producerRecord);
 				System.out.printf("Produced To Topic: %s%n", request.produceToTopic);
 				System.out.println("**************************** Produced Record ****************************");

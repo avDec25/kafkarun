@@ -1,4 +1,4 @@
-package com.myntra.kafkarun;
+package com.myntra.kafkarun.controller;
 
 import com.myntra.kafkarun.config.NormalConsumer;
 import lombok.SneakyThrows;
