@@ -26,9 +26,15 @@ public class LineProducer {
 	@Value("${line-producer.produce-delay}")
 	Integer PRODUCE_DELAY;
 
+	@Value("${line-producer.enable}")
+	Boolean isEnabled;
+
 	@SneakyThrows
-	@Scheduled(initialDelay = 10000, fixedDelay=Long.MAX_VALUE)
+	@Scheduled(initialDelay = 10000, fixedDelay = Long.MAX_VALUE)
 	public void produceFileToTopic() {
+		if (!isEnabled) {
+			return;
+		}
 		System.out.println("Transfer messages in File to Topic; Started at " + new Date());
 
 		try (Stream<String> stream = Files.lines(Paths.get(SOURCE_FILE_PATH))) {
@@ -43,7 +49,7 @@ public class LineProducer {
 
 	@SneakyThrows
 	public void processLine(String line) {
-		kafkaTemplate.send(DESTINATION_TOPIC_NAME, null, line);
+		kafkaTemplate.send(DESTINATION_TOPIC_NAME, line);
 		System.out.println("################# Produced message #################");
 		System.out.println(line);
 		System.out.println("#####################################################");
