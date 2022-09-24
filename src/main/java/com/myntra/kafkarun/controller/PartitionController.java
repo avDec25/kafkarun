@@ -1,28 +1,37 @@
 package com.myntra.kafkarun.controller;
 
+import com.myntra.kafkarun.functionality.PartitionTransferrer;
 import com.myntra.kafkarun.requestFromClients.PartitionTransferRequest;
-import com.myntra.kafkarun.service.PartitionTransferService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.SneakyThrows;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Controller
 @RequestMapping("partition")
 public class PartitionController {
 
-	@Autowired
-	PartitionTransferService partitionTransferService;
+	private static final AtomicBoolean shouldStop = new AtomicBoolean();
+	Thread thread;
 
-	@PostMapping("transfer")
-	public ResponseEntity<?> consumeFromPartitionToProduceInPartition(@RequestBody PartitionTransferRequest request) {
-		return ResponseEntity.ok().body(partitionTransferService.transferPartition(request));
+	@PostMapping("transfer/start")
+	public ResponseEntity<String> startPartitionTransfer(@RequestBody PartitionTransferRequest request) {
+		shouldStop.set(false);
+		thread = new Thread(new PartitionTransferrer(shouldStop, request));
+		thread.start();
+		return ResponseEntity.ok().body("Done.");
 	}
 
-//	public ResponseEntity<?> fileToPartition(@RequestBody FileToPartitionTransferRequest request) {
-//		return ResponseEntity.ok().body(partitionTransferService.transferFromFileToPartition(request));
-//	}
+	@SneakyThrows
+	@PostMapping("transfer/stop")
+	public ResponseEntity<String> stopPartitionTransfer() {
+		shouldStop.set(true);
+		thread.join();
+		return ResponseEntity.ok().body("Done.");
+	}
 
 }

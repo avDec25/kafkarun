@@ -9,9 +9,5 @@ public class PartitionTransferRequest {
 	public int consumeFromPartition;
 	public int produceToPartition;
 	public String consumerGroupId;
-	public Long consumeFromOffset;
-
-	public long pollTime;
-	public int epoch;
-	public String groupInstanceId = null;
+	public int commitBatch;
 }
