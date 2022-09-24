@@ -1,8 +1,11 @@
 package com.myntra.kafkarun.controller;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.myntra.kafkarun.functionality.PartitionTransferrer;
 import com.myntra.kafkarun.requestFromClients.PartitionTransferRequest;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +17,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Controller
 @RequestMapping("partition")
 public class PartitionController {
+	@Autowired
+	Gson gson;
 
 	private static final AtomicBoolean shouldStop = new AtomicBoolean();
 	Thread thread;
@@ -23,7 +28,10 @@ public class PartitionController {
 		shouldStop.set(false);
 		thread = new Thread(new PartitionTransferrer(shouldStop, request));
 		thread.start();
-		return ResponseEntity.ok().body("Done.");
+
+		JsonObject response = new JsonObject();
+		response.addProperty("message", "Started Partition Transfer, Id: " + thread.getId());
+		return ResponseEntity.ok().body(gson.toJson(response));
 	}
 
 	@SneakyThrows
@@ -31,7 +39,9 @@ public class PartitionController {
 	public ResponseEntity<String> stopPartitionTransfer() {
 		shouldStop.set(true);
 		thread.join();
-		return ResponseEntity.ok().body("Done.");
+		JsonObject response = new JsonObject();
+		response.addProperty("message", "Stopped PartitionTranfer, Id: " + thread.getId());
+		return ResponseEntity.ok().body(gson.toJson(response));
 	}
 
 }
