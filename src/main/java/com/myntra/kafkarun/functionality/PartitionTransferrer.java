@@ -1,8 +1,12 @@
 package com.myntra.kafkarun.functionality;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.myntra.kafkarun.requestFromClients.PartitionTransferRequest;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -12,12 +16,14 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 public class PartitionTransferrer implements Runnable {
 
 	public static final String KEY_DESERIALIZER = "org.apache.kafka.common.serialization.StringDeserializer";
@@ -25,6 +31,8 @@ public class PartitionTransferrer implements Runnable {
 	public static final String CONSUMER_COMMIT_RETRIES = "2";
 	public static final String ACKS = "all";
 	public static final String AUTO_COMMIT = "false";
+	public static final String BROADCAST_TOPIC = "/topic/partition-transfer";
+	Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 	public static String CONSUME_TOPIC;
 	public static int CONSUME_PARTITION;
 	public static int COMMIT_BATCH;
@@ -38,11 +46,13 @@ public class PartitionTransferrer implements Runnable {
 	AtomicBoolean shouldStop;
 	PartitionTransferRequest request;
 	KafkaTemplate<String, Object> producer;
+	SimpMessagingTemplate messagingTemplate;
 
-	public PartitionTransferrer(AtomicBoolean shouldStop, PartitionTransferRequest request) {
+	public PartitionTransferrer(AtomicBoolean shouldStop, PartitionTransferRequest request, SimpMessagingTemplate messagingTemplate) {
 		this.shouldStop = shouldStop;
 		this.request = request;
 		this.processed = 0;
+		this.messagingTemplate = messagingTemplate;
 
 		CONSUME_TOPIC = request.consumeFromTopic;
 		CONSUME_PARTITION = request.consumeFromPartition;
@@ -83,12 +93,20 @@ public class PartitionTransferrer implements Runnable {
 	@SneakyThrows
 	@Override
 	public void run() {
+		emit("Starting Partition Transfer");
+		emit(String.format("Consume from Kafka: %s ; Produce to Kafka: %s",
+				request.consumeFromKafka, request.produceToKafka
+		));
+		emit(String.format("Consume from topic: %s ; Consume from Partition: %d ; Produce to topic: %s ; Produce to Partition %d ",
+				request.consumeFromTopic,
+				request.consumeFromPartition,
+				request.produceToTopic,
+				request.produceToPartition
+		));
 		while (!shouldStop.get()) {
 			ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(1000));
 			if (records.isEmpty()) {
-				System.out.println("-----------------");
-				System.out.println("No more records");
-				System.out.println("-----------------");
+				emit("No more records to consume");
 				break;
 			}
 			for (ConsumerRecord<String, Object> record : records) {
@@ -104,13 +122,14 @@ public class PartitionTransferrer implements Runnable {
 
 	private void printDetails() {
 		OptionalLong lag = consumer.currentLag(topicPartition);
-		System.out.printf(
-				"Topic: %s, Partition: %d, Lag: %s, Last Committed: %d\n",
+		String message = String.format(
+				"Topic: %s, Partition: %d, Lag: %s, Last Committed: %d ",
 				request.consumeFromTopic,
 				request.consumeFromPartition,
 				lag.isEmpty() ? "Unknown" : lag.getAsLong(),
 				consumer.position(topicPartition)
 		);
+		emit(message);
 	}
 
 	void gracefulShutDown() {
@@ -121,6 +140,7 @@ public class PartitionTransferrer implements Runnable {
 		printDetails();
 		System.out.println("======================================================");
 		consumer.close();
+		emit("Process Shutdown.");
 	}
 
 	void processRecord(ConsumerRecord<String, Object> record) {
@@ -134,7 +154,7 @@ public class PartitionTransferrer implements Runnable {
 			@Override
 			public void onFailure(@NonNull Throwable ex) {
 				ex.printStackTrace();
-				System.out.println("Failed to push message: " + producerRecord);
+				emit("Failed to push record: " + producerRecord);
 			}
 
 			@Override
@@ -143,5 +163,14 @@ public class PartitionTransferrer implements Runnable {
 			}
 		});
 	}
+
+	private void emit(String message) {
+		JsonObject response = new JsonObject();
+		response.addProperty("timestamp", "" + new Date());
+		response.addProperty("message", message);
+		messagingTemplate.convertAndSend(BROADCAST_TOPIC, gson.toJson(response));
+		log.info(message);
+	}
+
 }
 

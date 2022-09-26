@@ -7,6 +7,7 @@ import com.myntra.kafkarun.requestFromClients.PartitionTransferRequest;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,17 +21,20 @@ public class PartitionController {
 	@Autowired
 	Gson gson;
 
+	@Autowired
+	SimpMessagingTemplate messagingTemplate;
+
 	private static final AtomicBoolean shouldStop = new AtomicBoolean();
 	Thread thread;
 
 	@PostMapping("transfer/start")
 	public ResponseEntity<String> startPartitionTransfer(@RequestBody PartitionTransferRequest request) {
 		shouldStop.set(false);
-		thread = new Thread(new PartitionTransferrer(shouldStop, request));
+		thread = new Thread(new PartitionTransferrer(shouldStop, request, messagingTemplate));
 		thread.start();
 
 		JsonObject response = new JsonObject();
-		response.addProperty("message", "Started Partition Transfer, Id: " + thread.getId());
+		response.addProperty("message", "Started Partition Transfer with Process Id: " + thread.getId());
 		return ResponseEntity.ok().body(gson.toJson(response));
 	}
 
@@ -40,7 +44,7 @@ public class PartitionController {
 		shouldStop.set(true);
 		thread.join();
 		JsonObject response = new JsonObject();
-		response.addProperty("message", "Stopped PartitionTranfer, Id: " + thread.getId());
+		response.addProperty("message", "Stopped Partition Transfer Process of Id: " + thread.getId());
 		return ResponseEntity.ok().body(gson.toJson(response));
 	}
 
