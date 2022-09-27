@@ -28,7 +28,7 @@ public class SpawnedConsumers {
 //	}
 //
 //	@SneakyThrows
-//	@KafkaListener(topics = "dolphin", groupId = "ocean-consumer-group")
+//	@KafkaListener(topics = "dc1.patron-capacityConsumptionServiceability", groupId = "ocean-consumer-group")
 //	public void spawn2(ConsumerRecord<String, Object> record) {
 //		Thread.sleep(num);
 //		log.info("Consumer 2; Partition: {}, Offset: {}\n", record.partition(), record.offset());
